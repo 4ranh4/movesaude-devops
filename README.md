@@ -129,7 +129,7 @@ flowchart LR
 **Lógica do fluxo:**
 1. O desenvolvimento acontece na branch `develop`. Cada push passa por build, testes e validação da imagem e, se tudo passar, vai automaticamente para **staging**.
 2. Validado em staging, um pull request de `develop` para `main` leva a mesma versão para **produção**.
-3. Nenhum ambiente recebe código que não passou nos testes: o deploy automático do Render fica desligado (`autoDeployTrigger: off` no [`render.yaml`](render.yaml)) e só o pipeline dispara o deploy, depois das etapas de CI.
+3. Nenhum ambiente recebe código que não passou nos testes: o deploy automático do Render fica desligado (`autoDeployTrigger: off`) e só o pipeline dispara o deploy, depois das etapas de CI. Os dois serviços estão descritos como código no [`render.yaml`](render.yaml) (Blueprint) e foram criados pela API do Render com essas mesmas configurações.
 4. O pipeline não considera o deploy concluído só porque o Render aceitou o pedido. Ele espera a instância nova responder com o commit certo e testa os endpoints de verdade.
 
 **Segredos e variáveis** (ficam no GitHub e no Render, nunca no repositório):
