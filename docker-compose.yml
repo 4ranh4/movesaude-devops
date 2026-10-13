@@ -1,0 +1,61 @@
+# Ambiente completo da MoveSaúde: API Spring Boot + PostgreSQL.
+# Uso: cp .env.example .env && docker compose up -d --build
+name: movesaude
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: movesaude-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-movesaude}
+      POSTGRES_USER: ${POSTGRES_USER:-movesaude}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no arquivo .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+    image: movesaude-api:${IMAGE_TAG:-local}
+    container_name: movesaude-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-movesaude}
+      DB_USER: ${POSTGRES_USER:-movesaude}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_SCHEMA: ${DB_SCHEMA:-movesaude}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+
+volumes:
+  # Os dados do PostgreSQL sobrevivem a "docker compose down" (use "down -v" para apagar)
+  pgdata:
+    name: movesaude-pgdata
+
+networks:
+  # Rede interna: a API fala com o banco pelo nome do serviço ("db"); só a porta da API é exposta
+  backend:
+    name: movesaude-backend
+    driver: bridge

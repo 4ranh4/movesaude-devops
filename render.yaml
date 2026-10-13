@@ -1,0 +1,45 @@
+# Render Blueprint (infraestrutura como código): os dois ambientes da MoveSaúde.
+# O deploy automático do Render fica desligado: quem dispara o deploy é o pipeline do
+# GitHub Actions (deploy hook), só depois de build, testes e smoke test com Docker Compose.
+services:
+  - type: web
+    name: movesaude-api-staging
+    runtime: docker
+    branch: develop
+    region: virginia
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: APP_ENV
+        value: staging
+      - key: DB_URL
+        value: jdbc:postgresql://aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: DB_SCHEMA
+        value: movesaude_staging
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+  - type: web
+    name: movesaude-api-producao
+    runtime: docker
+    branch: main
+    region: virginia
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DB_URL
+        value: jdbc:postgresql://aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: DB_SCHEMA
+        value: movesaude_producao
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false

@@ -1,0 +1,10 @@
+target/
+.git/
+.github/
+.secrets/
+.env
+.idea/
+.vscode/
+docs/
+*.zip
+*.md

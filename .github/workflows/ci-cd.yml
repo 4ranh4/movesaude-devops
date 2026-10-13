@@ -1,0 +1,240 @@
+# Pipeline CI/CD da MoveSaúde API
+#
+#   build-test ──► docker ──► deploy-staging     (push na branch develop)
+#                        └──► deploy-production  (push na branch main, com aprovação do ambiente)
+#
+# Pull requests rodam só build, testes e a validação da imagem com Docker Compose (sem deploy).
+name: CI/CD MoveSaúde
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "25"
+  IMAGE: ghcr.io/${{ github.repository_owner }}/movesaude-api
+  # URLs dos serviços no Render (podem ser trocadas pelas variáveis do repositório)
+  STAGING_URL: ${{ vars.STAGING_URL || 'https://movesaude-api-staging.onrender.com' }}
+  PRODUCTION_URL: ${{ vars.PRODUCTION_URL || 'https://movesaude-api-producao.onrender.com' }}
+
+jobs:
+  # ---------------------------------------------------------------- CI
+  build-test:
+    name: Build e testes automatizados
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Configurar JDK ${{ env.JAVA_VERSION }} (Temurin) com cache do Maven
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Compilar, testar e empacotar (mvn verify)
+        run: ./mvnw -B verify
+
+      - name: Resumo dos testes
+        if: always()
+        run: |
+          total=0; falhas=0; erros=0; ignorados=0
+          {
+            echo "## Testes automatizados"
+            echo ""
+            echo "| Suite | Testes | Falhas | Erros | Tempo (s) |"
+            echo "|---|---:|---:|---:|---:|"
+            for f in target/surefire-reports/TEST-*.xml; do
+              [ -f "$f" ] || continue
+              linha=$(grep -o '<testsuite [^>]*>' "$f")
+              nome=$(echo "$linha" | grep -o ' name="[^"]*"' | cut -d'"' -f2 | sed 's/.*\.//')
+              t=$(echo "$linha" | grep -o ' tests="[0-9]*"' | grep -o '[0-9]*')
+              fa=$(echo "$linha" | grep -o ' failures="[0-9]*"' | grep -o '[0-9]*')
+              er=$(echo "$linha" | grep -o ' errors="[0-9]*"' | grep -o '[0-9]*')
+              ig=$(echo "$linha" | grep -o ' skipped="[0-9]*"' | grep -o '[0-9]*')
+              tempo=$(echo "$linha" | grep -o ' time="[^"]*"' | cut -d'"' -f2)
+              echo "| $nome | $t | $fa | $er | $tempo |"
+              total=$((total+t)); falhas=$((falhas+fa)); erros=$((erros+er)); ignorados=$((ignorados+ig))
+            done
+            echo ""
+            echo "**Total: $total testes · $falhas falhas · $erros erros · $ignorados ignorados**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatórios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-de-teste
+          path: target/surefire-reports/
+
+      - name: Publicar o .jar gerado
+        uses: actions/upload-artifact@v4
+        with:
+          name: movesaude-api-jar
+          path: target/movesaude-api.jar
+
+  # ---------------------------------------------------------------- Imagem Docker
+  docker:
+    name: Imagem Docker e teste com Docker Compose
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Build da imagem (multi-stage)
+        run: |
+          docker build \
+            --build-arg GIT_SHA=${{ github.sha }} \
+            --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            -t movesaude-api:ci .
+          docker image ls movesaude-api:ci
+
+      - name: Subir API + PostgreSQL com Docker Compose
+        run: |
+          cp .env.example .env
+          IMAGE_TAG=ci GIT_SHA=${{ github.sha }} docker compose up -d --no-build
+          echo "Aguardando a API ficar saudável..."
+          for i in $(seq 1 40); do
+            estado=$(docker inspect -f '{{.State.Health.Status}}' movesaude-api 2>/dev/null || echo "?")
+            echo "  tentativa $i: $estado"
+            [ "$estado" = "healthy" ] && break
+            sleep 5
+          done
+          docker compose ps
+          [ "$(docker inspect -f '{{.State.Health.Status}}' movesaude-api)" = "healthy" ]
+
+      - name: Smoke test no ambiente Docker Compose
+        run: ./scripts/smoke-test.sh http://localhost:8080 local --fluxo
+
+      - name: Logs dos containers
+        if: always()
+        run: docker compose logs --no-color --tail 80
+
+      - name: Derrubar o ambiente Compose
+        if: always()
+        run: docker compose down -v
+
+      - name: Publicar imagem no GitHub Container Registry
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          ambiente=$([ "${{ github.ref_name }}" = "main" ] && echo production || echo staging)
+          for tag in "sha-${GITHUB_SHA::7}" "${{ github.ref_name }}" "$ambiente"; do
+            docker tag movesaude-api:ci "$IMAGE:$tag"
+            docker push "$IMAGE:$tag"
+          done
+          {
+            echo "## Imagem Docker publicada"
+            echo ""
+            echo "- \`$IMAGE:sha-${GITHUB_SHA::7}\`"
+            echo "- \`$IMAGE:${{ github.ref_name }}\`"
+            echo "- \`$IMAGE:$ambiente\`"
+            echo ""
+            echo "Tamanho: $(docker image inspect movesaude-api:ci --format '{{.Size}}' | awk '{printf "%.0f MB", $1/1024/1024}')"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------- CD: staging
+  deploy-staging:
+    name: Deploy em staging
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ env.STAGING_URL }}
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Acionar deploy no Render (deploy hook)
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Secret RENDER_DEPLOY_HOOK_STAGING não configurado no ambiente 'staging'"
+            exit 1
+          fi
+          curl -fsS -X POST "$DEPLOY_HOOK" > /dev/null
+          echo "Deploy do commit ${GITHUB_SHA::7} solicitado ao Render"
+
+      - name: Aguardar a nova versão no ar
+        run: ./scripts/wait-for-deploy.sh "$STAGING_URL" "${{ github.sha }}" 1500
+
+      - name: Smoke test em staging
+        run: ./scripts/smoke-test.sh "$STAGING_URL" staging --fluxo
+
+      - name: Resumo do deploy
+        run: |
+          {
+            echo "## Deploy em staging concluído"
+            echo ""
+            echo "- URL: $STAGING_URL"
+            echo "- Commit: \`${GITHUB_SHA::7}\`"
+            echo "- /api/info:"
+            echo '```json'
+            curl -fsS "$STAGING_URL/api/info"
+            echo ""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------- CD: produção
+  deploy-production:
+    name: Deploy em produção
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ env.PRODUCTION_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v5
+
+      - name: Acionar deploy no Render (deploy hook)
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Secret RENDER_DEPLOY_HOOK_PRODUCTION não configurado no ambiente 'production'"
+            exit 1
+          fi
+          curl -fsS -X POST "$DEPLOY_HOOK" > /dev/null
+          echo "Deploy do commit ${GITHUB_SHA::7} solicitado ao Render"
+
+      - name: Aguardar a nova versão no ar
+        run: ./scripts/wait-for-deploy.sh "$PRODUCTION_URL" "${{ github.sha }}" 1500
+
+      - name: Smoke test em produção (somente leitura)
+        run: ./scripts/smoke-test.sh "$PRODUCTION_URL" production
+
+      - name: Resumo do deploy
+        run: |
+          {
+            echo "## Deploy em produção concluído"
+            echo ""
+            echo "- URL: $PRODUCTION_URL"
+            echo "- Commit: \`${GITHUB_SHA::7}\`"
+            echo "- /api/info:"
+            echo '```json'
+            curl -fsS "$PRODUCTION_URL/api/info"
+            echo ""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
