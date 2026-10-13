@@ -270,9 +270,15 @@ Resultado da suíte executada pelo `mvn verify` (37 testes, 0 falhas; relatório
 
 ![Swagger](docs/prints/09-swagger-producao.png)
 
-### Ambientes staging e production no repositório (GitHub Environments)
+### Histórico de deploys no Render (staging e produção)
 
-![Repositório com os ambientes](docs/prints/10-repositorio-ambientes.png)
+O mesmo commit passa primeiro por staging e depois é promovido para produção. Os deploys são disparados pelo pipeline (deploy hook). Fonte: [`docs/historico-deploys-render.html`](docs/historico-deploys-render.html).
+
+![Histórico de deploys no Render](docs/prints/10-historico-deploys-render.png)
+
+### Repositório no GitHub
+
+![Repositório](docs/prints/11-repositorio-github.png)
 
 ---
 

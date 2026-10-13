@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Histórico de deploys no Render</title>
+<style>
+  body { font: 14px/1.45 "Segoe UI", Roboto, sans-serif; margin: 0; background: #f4f7fb; color: #14223a; }
+  header { background: #0b5cad; color: #fff; padding: 18px 28px; }
+  header h1 { margin: 0; font-size: 20px; } header p { margin: 4px 0 0; opacity: .9; }
+  main { padding: 18px 28px; }
+  section { background: #fff; border: 1px solid #dfe6f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; }
+  h2 { font-size: 15px; margin: 0 0 2px; } h2 small { color: #5b6b82; font-weight: 400; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-top: 1px solid #edf1f7; }
+  th { color: #5b6b82; font-weight: 600; border-top: 0; }
+  code { background: #eef2f8; padding: 1px 5px; border-radius: 5px; }
+  .live { color: #1f8a4c; font-weight: 700; } .off { color: #5b6b82; }
+  .hook { background: #e7f5ec; color: #1f8a4c; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  .manual { background: #eef2f8; color: #5b6b82; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  footer { color: #5b6b82; font-size: 12px; padding: 0 28px 18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Histórico de deploys no Render · MoveSaúde API</h1>
+  <p>Deploys de staging e produção, com o commit implantado e o que disparou cada um (13/10/2026, horário de Brasília)</p>
+</header>
+<main>
+  <section>
+    <h2>movesaude-api-staging <small>· branch develop · https://movesaude-api-staging.onrender.com</small></h2>
+    <table>
+      <tr><th>Deploy</th><th>Commit</th><th>Mensagem</th><th>Disparado por</th><th>Início → fim</th><th>Status</th></tr>
+      <tr><td><code>dep-db77o1ei0phs73c4cjo0</code></td><td><code>980611b</code></td><td>feat: título e descrição da API no Swagger UI; documentação técnica</td><td><span class="hook">pipeline (deploy hook)</span></td><td>15:44:22 → 15:46:28</td><td class="live">● live</td></tr>
+      <tr><td><code>dep-db77htui0phs73c3i6r0</code></td><td><code>13cb900</code></td><td>docs: registra a criação dos serviços do Render</td><td><span class="hook">pipeline (deploy hook)</span></td><td>15:31:19 → 15:33:15</td><td class="off">substituído</td></tr>
+      <tr><td><code>dep-db77e0lg1s2s739c8avg</code></td><td><code>d3f5029</code></td><td>docs: README com execução local, pipeline, containerização e checklist</td><td><span class="manual">criação do serviço</span></td><td>15:22:58 → 15:25:32</td><td class="off">substituído</td></tr>
+    </table>
+  </section>
+  <section>
+    <h2>movesaude-api-producao <small>· branch main · https://movesaude-api-producao.onrender.com</small></h2>
+    <table>
+      <tr><th>Deploy</th><th>Commit</th><th>Mensagem</th><th>Disparado por</th><th>Início → fim</th><th>Status</th></tr>
+      <tr><td><code>dep-db77qs3bc2fs73e4f4sg</code></td><td><code>980611b</code></td><td>feat: título e descrição da API no Swagger UI; documentação técnica</td><td><span class="hook">pipeline (deploy hook)</span></td><td>15:50:24 → 15:52:39</td><td class="live">● live</td></tr>
+      <tr><td><code>dep-db77kgavcj2c73chcgm0</code></td><td><code>13cb900</code></td><td>docs: registra a criação dos serviços do Render</td><td><span class="hook">pipeline (deploy hook)</span></td><td>15:36:49 → 15:38:41</td><td class="off">substituído</td></tr>
+      <tr><td><code>dep-db77e37avr4c73f8retg</code></td><td><code>d3f5029</code></td><td>docs: README com execução local, pipeline, containerização e checklist</td><td><span class="manual">criação do serviço</span></td><td>15:23:08 → 15:25:33</td><td class="off">substituído</td></tr>
+    </table>
+  </section>
+</main>
+<footer>Dados obtidos da API do Render (lista de deploys de cada serviço). O commit 980611b passou primeiro por staging (15:46) e depois foi promovido para produção (15:52).</footer>
+</body>
+</html>
