@@ -1,0 +1,10 @@
+# Perfil "dev": roda sem Docker e sem PostgreSQL, com H2 em memória no modo PostgreSQL.
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+spring:
+  datasource:
+    url: jdbc:h2:mem:movesaude;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+
+movesaude:
+  ambiente: ${APP_ENV:dev}

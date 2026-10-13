@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MoveSaúde API</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230b5cad'/><path d='M9 17h5l2-6 3 12 2-6h2' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <style>
+    :root {
+      --bg: #f4f7fb; --card: #ffffff; --ink: #14223a; --muted: #5b6b82; --line: #dfe6f0;
+      --brand: #0b5cad; --ok: #1f8a4c; --env: #5b6b82;
+    }
+    body[data-env="staging"] { --env: #b26a00; }
+    body[data-env="production"] { --env: #1f8a4c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+           font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header { background: var(--brand); color: #fff; padding: 20px 24px; }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 4px 0 0; opacity: .85; }
+    .faixa { background: var(--env); color: #fff; text-align: center; padding: 8px; font-weight: 700;
+             letter-spacing: .08em; text-transform: uppercase; }
+    main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 40px; }
+    .grade { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+    .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+    dt { color: var(--muted); } dd { margin: 0; font-weight: 600; word-break: break-all; }
+    .num { font-size: 26px; font-weight: 700; }
+    .rotulo { color: var(--muted); font-size: 13px; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .status { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #e7f5ec; color: var(--ok); }
+    .status.down { background: #fdeaea; color: #b42318; }
+    h3 { margin: 28px 0 12px; font-size: 17px; }
+    ul.links { padding-left: 18px; margin: 0; } ul.links li { margin: 4px 0; }
+    a { color: var(--brand); }
+    code { background: #eef2f8; padding: 1px 6px; border-radius: 6px; }
+    footer { color: var(--muted); font-size: 13px; margin-top: 24px; }
+  </style>
+</head>
+<body data-env="local">
+  <div class="faixa" id="faixa">Ambiente: carregando…</div>
+  <header>
+    <h1>MoveSaúde API</h1>
+    <p>Mobilidade acessível e transporte de saúde · Cidades ESG Inteligentes</p>
+  </header>
+  <main>
+    <div class="grade">
+      <section class="card">
+        <h2>Instância</h2>
+        <dl>
+          <dt>Ambiente</dt><dd id="ambiente">–</dd>
+          <dt>Versão</dt><dd id="versao">–</dd>
+          <dt>Commit</dt><dd id="commit">–</dd>
+          <dt>Iniciada em</dt><dd id="iniciada">–</dd>
+        </dl>
+      </section>
+      <section class="card">
+        <h2>Saúde</h2>
+        <dl>
+          <dt>Aplicação</dt><dd><span class="status" id="saude">–</span></dd>
+          <dt>Banco</dt><dd id="banco">–</dd>
+          <dt>Conexão</dt><dd><span class="status" id="saudeBanco">–</span></dd>
+        </dl>
+      </section>
+    </div>
+
+    <h3>Indicadores ESG da operação</h3>
+    <div class="grade">
+      <section class="card">
+        <h2>Ambiental</h2>
+        <div class="kpis">
+          <div><div class="num" id="co2Evitado">–</div><div class="rotulo">kg de CO₂ evitados</div></div>
+          <div><div class="num" id="frotaLimpa">–</div><div class="rotulo">da frota elétrica ou híbrida</div></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Social</h2>
+        <div class="kpis">
+          <div><div class="num" id="acessiveis">–</div><div class="rotulo">corridas acessíveis ou médicas</div></div>
+          <div><div class="num" id="tratamento">–</div><div class="rotulo">idas a tratamento contínuo</div></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Governança</h2>
+        <div class="kpis">
+          <div><div class="num" id="verificados">–</div><div class="rotulo">prestadores verificados</div></div>
+          <div><div class="num" id="comissao">–</div><div class="rotulo">comissão única da plataforma</div></div>
+        </div>
+      </section>
+    </div>
+
+    <h3>Endpoints</h3>
+    <section class="card">
+      <ul class="links">
+        <li><a href="swagger-ui.html">Documentação interativa (Swagger UI)</a></li>
+        <li><a href="api/info"><code>GET /api/info</code></a> versão, ambiente, commit e banco</li>
+        <li><a href="actuator/health"><code>GET /actuator/health</code></a> health check usado pelo Docker e pelo Render</li>
+        <li><a href="api/prestadores"><code>GET /api/prestadores</code></a> rede parceira, frota e tarifas</li>
+        <li><a href="api/passageiros"><code>GET /api/passageiros</code></a> passageiros e modalidade indicada</li>
+        <li><a href="api/convenios/planos"><code>GET /api/convenios/planos</code></a> planos com benefício mobilidade</li>
+        <li><a href="api/corridas"><code>GET /api/corridas</code></a> corridas · <code>POST</code> solicita · <code>GET /{id}/opcoes</code> matching</li>
+        <li><a href="api/esg/indicadores"><code>GET /api/esg/indicadores</code></a> indicadores ESG completos</li>
+      </ul>
+    </section>
+    <footer>Dados de demonstração fictícios. Projeto acadêmico FIAP · 2TDS.</footer>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const nomes = { local: "Local", dev: "Desenvolvimento", staging: "Staging", production: "Produção" };
+    const fmt = (n) => Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+
+    fetch("api/info").then((r) => r.json()).then((i) => {
+      document.body.dataset.env = i.ambiente;
+      $("faixa").textContent = "Ambiente: " + (nomes[i.ambiente] || i.ambiente);
+      $("ambiente").textContent = i.ambiente;
+      $("versao").textContent = i.versao;
+      $("commit").textContent = (i.commit || "").slice(0, 12);
+      $("iniciada").textContent = new Date(i.iniciadaEm).toLocaleString("pt-BR");
+      $("banco").textContent = i.banco;
+    }).catch(() => { $("faixa").textContent = "API indisponível"; });
+
+    fetch("actuator/health").then((r) => r.json()).then((h) => {
+      $("saude").textContent = h.status;
+      $("saude").classList.toggle("down", h.status !== "UP");
+      const db = h.components && h.components.db ? h.components.db.status : "–";
+      $("saudeBanco").textContent = db;
+      $("saudeBanco").classList.toggle("down", db !== "UP");
+    }).catch(() => { $("saude").textContent = "DOWN"; $("saude").classList.add("down"); });
+
+    fetch("api/esg/indicadores").then((r) => r.json()).then((e) => {
+      $("co2Evitado").textContent = fmt(e.ambiental.co2EvitadoKg);
+      $("frotaLimpa").textContent = fmt(e.ambiental.frotaLimpaPct) + "%";
+      $("acessiveis").textContent = e.social.corridasAcessiveisOuMedicas;
+      $("tratamento").textContent = e.social.corridasTratamentoContinuo;
+      $("verificados").textContent = fmt(e.governanca.prestadoresVerificadosPct) + "%";
+      $("comissao").textContent = fmt(e.governanca.comissaoPlataformaPct) + "%";
+    });
+  </script>
+</body>
+</html>

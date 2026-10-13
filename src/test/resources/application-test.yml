@@ -1,0 +1,10 @@
+# Testes automatizados: H2 em memória no modo PostgreSQL, com as mesmas migrations do Flyway.
+spring:
+  datasource:
+    url: jdbc:h2:mem:movesaude-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+
+movesaude:
+  ambiente: test
+  commit: teste
