@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>MoveSaúde · Documentação DevOps</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  :root { --ink:#14223a; --muted:#5b6b82; --line:#d9e1ec; --brand:#0b5cad; --soft:#eef4fb; --ok:#1f8a4c; }
+  * { box-sizing: border-box; }
+  body { font: 10.5pt/1.5 "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); margin: 0; }
+  h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 6mm; color: var(--brand); }
+  h2 { font-size: 15pt; color: var(--brand); border-bottom: 2px solid var(--brand); padding-bottom: 2mm; margin: 0 0 4mm; }
+  h3 { font-size: 11.5pt; margin: 5mm 0 2mm; }
+  p { margin: 0 0 2.5mm; }
+  .secao { page-break-before: always; }
+  .capa { height: 255mm; display: flex; flex-direction: column; justify-content: center; }
+  .capa .tag { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 9pt; margin-bottom: 4mm; }
+  .capa .sub { font-size: 13pt; color: var(--muted); margin-bottom: 14mm; }
+  .capa table { width: auto; }
+  .capa .rodape { margin-top: 18mm; color: var(--muted); font-size: 9.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 9.5pt; }
+  th, td { border: 1px solid var(--line); padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  code, pre { font-family: Consolas, "Cascadia Mono", monospace; font-size: 8.6pt; }
+  code { background: var(--soft); padding: 0 1.2mm; border-radius: 1mm; }
+  pre { background: #0f1b2d; color: #e6edf7; padding: 3mm 4mm; border-radius: 2mm; white-space: pre-wrap; margin: 2mm 0 4mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; } li { margin: .6mm 0; }
+  .fluxo { display: flex; align-items: stretch; gap: 2mm; margin: 3mm 0 5mm; }
+  .fluxo .etapa { flex: 1; border: 1.5px solid var(--brand); border-radius: 2mm; padding: 2.5mm; background: var(--soft); font-size: 9pt; }
+  .fluxo .etapa b { display: block; color: var(--brand); margin-bottom: 1mm; }
+  .fluxo .seta { align-self: center; color: var(--brand); font-weight: 700; }
+  figure { margin: 2mm 0 5mm; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); border-radius: 1.5mm; }
+  figcaption { font-size: 8.8pt; color: var(--muted); margin-top: 1.2mm; }
+  .ok { color: var(--ok); font-weight: 700; }
+  .nota { font-size: 9pt; color: var(--muted); }
+  .grade2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+</style>
+</head>
+<body>
+
+<section class="capa">
+  <div class="tag">FIAP · 2TDS · Navegando pelo mundo DevOps</div>
+  <h1>Projeto - Cidades ESG Inteligentes<br>MoveSaúde API</h1>
+  <div class="sub">Pipeline CI/CD, containerização e deploy em staging e produção</div>
+  <table>
+    <tr><th>Integrante</th><th>RM</th></tr>
+    <tr><td>João Pedro Aranha Moscatello</td><td>565854</td></tr>
+    <tr><td>Lucas Vilarim de Souza</td><td>565685</td></tr>
+  </table>
+  <div class="rodape">
+    Repositório: https://github.com/4ranh4/movesaude-devops<br>
+    Staging: https://movesaude-api-staging.onrender.com · Produção: https://movesaude-api-producao.onrender.com
+  </div>
+</section>
+
+<section class="secao">
+  <h2>1. O projeto</h2>
+  <p>A <b>MoveSaúde</b> conecta pessoas com deficiência, idosos e pacientes em tratamento contínuo a uma rede de prestadores verificados de transporte acessível, assistido e de remoção não emergencial. A API, em <b>Java 25 com Spring Boot 4.1</b> e <b>PostgreSQL</b>, faz a triagem da modalidade pelas necessidades do passageiro, o matching com até três opções compatíveis, a cotação por trecho e a aplicação dos créditos mensais do convênio.</p>
+  <p>O tema <b>Cidades ESG Inteligentes</b> aparece nos indicadores que a própria API calcula em <code>GET /api/esg/indicadores</code>:</p>
+  <table>
+    <tr><th style="width:22%">Pilar</th><th>Indicadores</th></tr>
+    <tr><td><b>Ambiental</b></td><td>km rodados, CO₂ emitido e evitado pela frota elétrica ou híbrida, % da frota limpa</td></tr>
+    <tr><td><b>Social</b></td><td>corridas acessíveis ou médicas, idas a tratamentos contínuos (hemodiálise, oncologia, terapia), passageiros atendidos, valor subsidiado pelos convênios</td></tr>
+    <tr><td><b>Governança</b></td><td>% de prestadores verificados (só eles recebem corridas), comissão única e preço detalhado linha a linha</td></tr>
+  </table>
+
+  <h3>Ambientes</h3>
+  <table>
+    <tr><th>Ambiente</th><th>Execução</th><th>Banco</th><th>Origem</th></tr>
+    <tr><td>Local</td><td>Docker Compose: API + PostgreSQL 17</td><td>container <code>db</code>, volume <code>movesaude-pgdata</code></td><td>qualquer branch</td></tr>
+    <tr><td>Staging</td><td>Render, container Docker (plano free)</td><td>Supabase PostgreSQL 17, schema e usuário <code>movesaude_staging</code></td><td>branch <code>develop</code></td></tr>
+    <tr><td>Produção</td><td>Render, container Docker (plano free)</td><td>Supabase PostgreSQL 17, schema e usuário <code>movesaude_producao</code></td><td>branch <code>main</code></td></tr>
+  </table>
+  <p class="nota">Staging e produção ficam no mesmo projeto Supabase, mas isolados: cada ambiente tem o próprio usuário de banco, dono apenas do próprio schema e sem permissão no schema do outro.</p>
+</section>
+
+<section class="secao">
+  <h2>2. Pipeline CI/CD</h2>
+  <p><b>Ferramenta:</b> GitHub Actions (<code>.github/workflows/ci-cd.yml</code>), com GitHub Environments (<code>staging</code> e <code>production</code>) e GitHub Container Registry. <b>Destino do deploy:</b> Render, com os dois serviços descritos como código no Blueprint <code>render.yaml</code>.</p>
+
+  <div class="fluxo">
+    <div class="etapa"><b>1 · Build e testes</b>JDK 25 + cache Maven, <code>mvn verify</code>: compila, roda os 37 testes e gera o .jar</div>
+    <div class="seta">→</div>
+    <div class="etapa"><b>2 · Imagem Docker</b>build multi-stage, sobe API + PostgreSQL com Compose, smoke test, push no GHCR</div>
+    <div class="seta">→</div>
+    <div class="etapa"><b>3a · Deploy staging</b>push em <code>develop</code>: deploy hook, espera o commit no ar e roda smoke test com escrita</div>
+    <div class="seta">/</div>
+    <div class="etapa"><b>3b · Deploy produção</b>push em <code>main</code>: aprovação do environment, deploy hook, espera o commit e smoke test somente leitura</div>
+  </div>
+
+  <h3>Etapas e lógica</h3>
+  <table>
+    <tr><th style="width:24%">Job</th><th style="width:18%">Gatilho</th><th>O que faz</th></tr>
+    <tr><td>Build e testes automatizados</td><td>todo push e PR em <code>develop</code>/<code>main</code></td><td><code>actions/setup-java</code> (Temurin 25) com cache do Maven; <code>./mvnw -B verify</code>; publica relatórios de teste e o .jar como artefatos; escreve a tabela de testes no resumo da execução.</td></tr>
+    <tr><td>Imagem Docker e teste com Docker Compose</td><td>após o job 1</td><td><code>docker build --build-arg GIT_SHA=…</code>; <code>docker compose up</code> com API + PostgreSQL; espera o health check <code>healthy</code>; roda <code>scripts/smoke-test.sh</code> com um fluxo completo de corrida; em pushes, publica no GHCR com as tags <code>sha-&lt;commit&gt;</code>, <code>&lt;branch&gt;</code> e <code>staging</code>/<code>production</code>.</td></tr>
+    <tr><td>Deploy em staging</td><td>push em <code>develop</code></td><td>Aciona o deploy hook do serviço de staging (secret <code>RENDER_DEPLOY_HOOK_STAGING</code>); <code>scripts/wait-for-deploy.sh</code> espera <code>/api/info</code> responder com o commit testado; smoke test em staging, criando e confirmando uma corrida.</td></tr>
+    <tr><td>Deploy em produção</td><td>push em <code>main</code></td><td>Environment <code>production</code> com revisão obrigatória; deploy hook de produção; espera o commit no ar; smoke test somente leitura.</td></tr>
+  </table>
+  <ul>
+    <li><b>Promoção:</b> o código é integrado em <code>develop</code> e vai automaticamente para staging. Validado, um pull request <code>develop → main</code> leva a mesma versão para produção.</li>
+    <li><b>Nada vai para um ambiente sem passar nos testes:</b> o deploy automático do Render está desligado (<code>autoDeployTrigger: off</code>), e só o pipeline dispara o deploy.</li>
+    <li><b>Deploy confirmado de verdade:</b> o pipeline só termina quando a instância nova responde com o commit esperado e passa no smoke test.</li>
+    <li><b>Segredos fora do código:</b> deploy hooks ficam nos environments do GitHub, e as credenciais do banco nas variáveis do Render.</li>
+  </ul>
+</section>
+
+<section class="secao">
+  <h2>3. Docker</h2>
+  <h3>Arquitetura</h3>
+  <div class="fluxo">
+    <div class="etapa"><b>Rede movesaude-backend</b>bridge interna entre os serviços</div>
+    <div class="etapa"><b>api · movesaude-api</b>imagem do Dockerfile, porta 8080 publicada, health check <code>/actuator/health</code></div>
+    <div class="seta">→</div>
+    <div class="etapa"><b>db · postgres:17-alpine</b>acessado pelo nome <code>db</code>, porta não exposta, <code>pg_isready</code></div>
+    <div class="etapa"><b>Volume movesaude-pgdata</b>dados persistentes do PostgreSQL</div>
+  </div>
+  <p>A API só sobe depois que o banco responde (<code>depends_on: condition: service_healthy</code>). As variáveis vêm do <code>.env</code>, cujo modelo é o <code>.env.example</code>. O Flyway cria o schema e as tabelas e carrega os dados de demonstração na primeira inicialização.</p>
+
+  <h3>Imagem criada</h3>
+  <table>
+    <tr><th style="width:26%">Item</th><th>Valor</th></tr>
+    <tr><td>Nome</td><td><code>ghcr.io/4ranh4/movesaude-api</code></td></tr>
+    <tr><td>Tags</td><td><code>sha-&lt;commit&gt;</code>, <code>develop</code>, <code>main</code>, <code>staging</code>, <code>production</code></td></tr>
+    <tr><td>Base de build / runtime</td><td><code>eclipse-temurin:25-jdk</code> → <code>eclipse-temurin:25-jre</code></td></tr>
+    <tr><td>Tamanho</td><td>173 MB compactada no registry (9 camadas); o .jar tem 55 MB</td></tr>
+    <tr><td>Usuário</td><td><code>movesaude</code>, sem privilégios de root</td></tr>
+    <tr><td>Health check</td><td><code>curl /actuator/health/liveness</code> a cada 15 s</td></tr>
+  </table>
+
+  <h3>Estratégias</h3>
+  <ul>
+    <li><b>Multi-stage:</b> o JDK e o Maven ficam na etapa de build; a imagem final leva só o JRE e o .jar.</li>
+    <li><b>Cache de camadas:</b> o <code>pom.xml</code> e as dependências vêm antes do código, então uma mudança no código não baixa as dependências de novo.</li>
+    <li><b>Mesma imagem em todos os ambientes:</b> só mudam as variáveis <code>APP_ENV</code>, <code>DB_URL</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>, <code>DB_SCHEMA</code> e <code>PORT</code>.</li>
+    <li><b>Rastreabilidade:</b> <code>GIT_SHA</code> entra na imagem e aparece em <code>/api/info</code>.</li>
+    <li><b>JVM para containers pequenos:</b> <code>MaxRAMPercentage=60</code>, <code>SerialGC</code> e <code>TieredStopAtLevel=1</code>, para caber nos 512 MB do plano gratuito.</li>
+  </ul>
+
+  <h3>Comandos usados</h3>
+<pre>cp .env.example .env
+docker compose up -d --build          # constrói a imagem e sobe API + PostgreSQL
+docker compose ps                     # estado e health dos serviços
+docker compose logs -f api            # logs da API
+./scripts/smoke-test.sh http://localhost:8080 local --fluxo
+docker compose down -v                # derruba e apaga o volume
+
+# no pipeline
+docker build --build-arg GIT_SHA=$GITHUB_SHA -t movesaude-api:ci .
+IMAGE_TAG=ci docker compose up -d --no-build
+docker tag movesaude-api:ci ghcr.io/4ranh4/movesaude-api:sha-&lt;commit&gt;
+docker push ghcr.io/4ranh4/movesaude-api:sha-&lt;commit&gt;</pre>
+</section>
+
+<section class="secao">
+  <h2>4. Prints do pipeline rodando</h2>
+  <p class="nota">Execuções: https://github.com/4ranh4/movesaude-devops/actions</p>
+  <figure><img src="prints/01-pipeline-develop-staging.png"><figcaption>Figura 1. Push em <code>develop</code>: build e testes → imagem Docker com Compose → deploy em staging.</figcaption></figure>
+  <figure><img src="prints/02-job-build-testes.png"><figcaption>Figura 2. Job de build e testes: JDK 25, <code>mvn verify</code> (compila, testa e empacota), relatórios e .jar publicados como artefatos.</figcaption></figure>
+  <figure><img src="prints/02b-relatorio-testes.png"><figcaption>Figura 3. Suíte de testes executada pelo <code>mvn verify</code>: 37 testes, 0 falhas (26 unitários e 11 de integração).</figcaption></figure>
+  <figure><img src="prints/03-job-docker-compose.png"><figcaption>Figura 4. Etapas do job Docker: build multi-stage, subida de API + PostgreSQL com Compose, smoke test e publicação no GHCR.</figcaption></figure>
+  <figure><img src="prints/04-job-deploy-staging.png"><figcaption>Figura 5. Deploy em staging: deploy hook do Render, espera do commit no ar e smoke test.</figcaption></figure>
+  <figure><img src="prints/05-pipeline-main-producao.png"><figcaption>Figura 6. Push em <code>main</code>: mesma esteira, com deploy no ambiente de produção.</figcaption></figure>
+  <figure><img src="prints/06-job-deploy-producao.png"><figcaption>Figura 7. Deploy em produção: deploy hook, confirmação do commit e smoke test somente leitura.</figcaption></figure>
+</section>
+
+<section class="secao">
+  <h2>5. Ambientes staging e produção funcionando</h2>
+  <figure><img src="prints/07-staging-funcionando.png"><figcaption>Figura 8. Staging (https://movesaude-api-staging.onrender.com): ambiente, commit, PostgreSQL do Supabase e indicadores ESG.</figcaption></figure>
+  <figure><img src="prints/08-producao-funcionando.png"><figcaption>Figura 9. Produção (https://movesaude-api-producao.onrender.com).</figcaption></figure>
+  <figure><img src="prints/09-swagger-producao.png"><figcaption>Figura 10. Swagger UI da API em produção.</figcaption></figure>
+  <figure><img src="prints/10-repositorio-ambientes.png"><figcaption>Figura 11. Repositório no GitHub com os ambientes staging e production (GitHub Environments) e o último deploy de cada um.</figcaption></figure>
+</section>
+
+<section class="secao">
+  <h2>6. Desafios encontrados e como foram resolvidos</h2>
+  <table>
+    <tr><th style="width:34%">Desafio</th><th>Solução</th></tr>
+    <tr><td>O protótipo do MoveSaúde era só front-end (React), e a atividade pede Java Spring ou C#.</td><td>Criamos a API em Spring Boot 4.1 e levamos para Java as regras do protótipo (triagem, cotação, matching e créditos do convênio), cobertas por 37 testes.</td></tr>
+    <tr><td>O plano gratuito do Supabase permite só 2 projetos ativos, e um já estava em uso.</td><td>Staging e produção ficaram no mesmo projeto, isolados por <b>schema e usuário de banco</b>: cada usuário é dono só do próprio schema.</td></tr>
+    <tr><td>A conexão direta do Supabase é só IPv6, e o Render e o GitHub Actions usam IPv4.</td><td>Conexão pelo <b>pooler Supavisor em modo sessão</b> (compatível com prepared statements do JDBC). Testando, descobrimos que o host certo do projeto é <code>aws-0-us-east-1</code>; o <code>aws-1</code> respondia "tenant not found".</td></tr>
+    <tr><td>Criar as senhas do banco sem expor o texto puro.</td><td>As senhas foram geradas localmente, e só o hash <b>SCRAM-SHA-256</b> foi enviado ao Supabase. O texto puro fica apenas nas variáveis secretas do Render.</td></tr>
+    <tr><td>O Jackson 3, padrão do Spring Boot 4, recusava JSON sem campos booleanos opcionais (erro 400).</td><td>Um teste de integração pegou o erro. Configuramos <code>spring.jackson.deserialization.fail-on-null-for-primitives=false</code>.</td></tr>
+    <tr><td>O deploy hook do Render é assíncrono: ele aceita o pedido antes de a versão nova estar no ar.</td><td>O <code>wait-for-deploy.sh</code> compara o commit de <code>/api/info</code> com o SHA do pipeline. Só depois disso roda o smoke test.</td></tr>
+    <tr><td>O smoke test quebrou porque o JSON do Actuator vem em ordem alfabética.</td><td>O script passou a consultar endpoints específicos (<code>/actuator/health/db</code> e <code>/readiness</code>), em vez de depender da ordem dos campos.</td></tr>
+    <tr><td>O plano gratuito do Render tem 512 MB de RAM e hiberna o serviço sem uso.</td><td>JVM ajustada para containers, timeouts generosos e novas tentativas (retries) nos scripts. A primeira requisição depois da hibernação acorda o serviço.</td></tr>
+    <tr><td>Testar sem depender de Docker na máquina de desenvolvimento.</td><td>Os testes usam H2 no modo PostgreSQL com as mesmas migrations. O PostgreSQL real é validado no job do Docker Compose e no Supabase.</td></tr>
+  </table>
+</section>
+
+<section class="secao">
+  <h2>7. Checklist de entrega</h2>
+  <table>
+    <tr><th>Item</th><th style="width:14%">OK</th></tr>
+    <tr><td>Projeto compactado em .ZIP com estrutura organizada</td><td class="ok">☑ OK</td></tr>
+    <tr><td>Dockerfile funcional</td><td class="ok">☑ OK</td></tr>
+    <tr><td>docker-compose.yml ou arquivos Kubernetes</td><td class="ok">☑ OK</td></tr>
+    <tr><td>Pipeline com etapas de build, teste e deploy</td><td class="ok">☑ OK</td></tr>
+    <tr><td>README.md com instruções e prints</td><td class="ok">☑ OK</td></tr>
+    <tr><td>Documentação técnica com evidências (PDF ou PPT)</td><td class="ok">☑ OK</td></tr>
+    <tr><td>Deploy realizado nos ambientes staging e produção</td><td class="ok">☑ OK</td></tr>
+  </table>
+</section>
+
+</body>
+</html>

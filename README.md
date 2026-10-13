@@ -236,9 +236,13 @@ docker pull ghcr.io/4ranh4/movesaude-api:production                             
 
 ![Pipeline develop → staging](docs/prints/01-pipeline-develop-staging.png)
 
-### Resumo da execução: testes, imagem publicada e deploy
+### Build e testes automatizados
 
-![Resumo da execução](docs/prints/02-resumo-execucao.png)
+![Job de build e testes](docs/prints/02-job-build-testes.png)
+
+Resultado da suíte executada pelo `mvn verify` (37 testes, 0 falhas; relatório gerado a partir dos XML do Surefire, em [`docs/relatorio-testes.html`](docs/relatorio-testes.html)):
+
+![Relatório dos testes](docs/prints/02b-relatorio-testes.png)
 
 ### Imagem Docker validada com Docker Compose e publicada no GHCR
 
@@ -266,9 +270,9 @@ docker pull ghcr.io/4ranh4/movesaude-api:production                             
 
 ![Swagger](docs/prints/09-swagger-producao.png)
 
-### Histórico de deploys por ambiente (GitHub Environments)
+### Ambientes staging e production no repositório (GitHub Environments)
 
-![Deployments](docs/prints/10-ambientes-deployments.png)
+![Repositório com os ambientes](docs/prints/10-repositorio-ambientes.png)
 
 ---
 
@@ -337,10 +341,10 @@ Todos os dados de demonstração (operadoras, prestadores, passageiros) são fic
 
 | Item | OK |
 |---|---|
-| Projeto compactado em .ZIP com estrutura organizada | ☐ |
-| Dockerfile funcional | ☐ |
-| docker-compose.yml ou arquivos Kubernetes | ☐ |
-| Pipeline com etapas de build, teste e deploy | ☐ |
-| README.md com instruções e prints | ☐ |
-| Documentação técnica com evidências (PDF ou PPT) | ☐ |
-| Deploy realizado nos ambientes staging e produção | ☐ |
+| Projeto compactado em .ZIP com estrutura organizada | ☑ |
+| Dockerfile funcional | ☑ |
+| docker-compose.yml ou arquivos Kubernetes | ☑ |
+| Pipeline com etapas de build, teste e deploy | ☑ |
+| README.md com instruções e prints | ☑ |
+| Documentação técnica com evidências (PDF ou PPT) | ☑ ([docs/MoveSaude-Documentacao-DevOps.pdf](docs/MoveSaude-Documentacao-DevOps.pdf)) |
+| Deploy realizado nos ambientes staging e produção | ☑ |
